@@ -79,21 +79,36 @@ public class BatchConfiguration {
 	//(JobCompletionNotificationListener listener, Step step1) {
 		return jobBuilderFactory.get("demoJob")
 			.incrementer(new RunIdIncrementer())
-			.listener(new JobCompletionNotificationListener())
-			.flow(importUser())
-//			.next(dotasklet())
-			.end()
+//			.listener(new JobCompletionNotificationListener())
+			// 1. two tasklet demo
+//			.start(this.demoTasklet1()).next(this.demoTasklet2())
+			// 2. step failed demo
+//			.start(demoTasklet1()).on("FAILED").to(demoTasklet2()).end()
+			// 3. chunk
+			.start(this.importUser())
 			.build();
+//			.flow(importUser())
+//			.next(dotasklet())
+			
+			
 	}
 	
     @Bean
-    protected Step dotasklet() {
+    protected Step demoTasklet1() {
         return stepBuilderFactory
-          .get("dotasklet")
-          .tasklet(new DummyTasklet())
+          .get("demoTasklet1")
+          .tasklet(new DemoTasklet1())
           .build();
     }
 
+    @Bean
+    protected Step demoTasklet2() {
+        return stepBuilderFactory
+          .get("demoTasklet2")
+          .tasklet(new DemoTasklet2())
+          .build();
+    }
+    
 	@Bean
 	public Step importUser() { 
 		// for multi thread
@@ -107,7 +122,8 @@ public class BatchConfiguration {
 			.reader(reader(null))
 			.processor(processor())
 			.writer(writer(null))
-			.taskExecutor(taskExecutor)
+			.faultTolerant().skipLimit(1).skip(ArithmeticException.class)
+//			.taskExecutor(taskExecutor)
 			.build();
 	}
 	// end::jobstep[]
